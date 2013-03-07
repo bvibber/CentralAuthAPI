@@ -17,14 +17,24 @@ class ProxiedApiMain
 			return;
 		}
 	
-		$baseUrl = 'http://commons.wikimedia.org/w/api.php';
+		$wiki = WikiMap::getWiki( $this->target );
+		if ( !$wiki ) {
+			$this->errorOut( 'invalid-centralauth-target' );
+			return;
+		}
+		$baseUrl = $wiki->getCanonicalServer();
+
+		// Wikimedia-specific hack
+		$apiPath = "/w/api.php";
+
+		// Copy over any GET parameters to the final URL
 		$getParams = array();
 		foreach ( $_GET as $key => $val ) {
 			if ( $key !== 'apitarget' ) {
 				$getParams[$key] = $val;
 			}
 		}
-		$url = $baseUrl . '?' . wfArrayToCgi( $getParams );
+		$url = $baseUrl . $apiPath . '?' . wfArrayToCgi( $getParams );
 		
 		$opts = array(
 			'http' => array(
@@ -39,8 +49,6 @@ class ProxiedApiMain
 			$opts['http']['method'] = 'POST';
 			$opts['http']['content'] = file_get_contents( 'php://stdin' );
 		}
-		
-		//var_dump($opts);die('xxx');
 
 		// Quick hack
 		$type = $wgRequest->getVal( 'format' );
@@ -65,6 +73,7 @@ class ProxiedApiMain
 	}
 	
 	function errorOut( $msg ) {
+		header( 'HTTP/1.x 400 Bad Request' );
 		die( $msg );
 	}
 	
@@ -90,4 +99,3 @@ $wgHooks['BeforeCreateApiMain'][] = function( &$processor ) {
 		return true;
 	}
 };
-
