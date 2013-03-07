@@ -11,7 +11,12 @@ class ProxiedApiMain
 
 		$userCookie = isset( $_COOKIE['centralauth_User'] ) ? $_COOKIE['centralauth_User'] : null;
 		$sessionCookie = isset( $_COOKIE['centralauth_Session'] ) ? $_COOKIE['centralauth_Session'] : null;
-		
+
+		if ( empty( $userCookie ) || empty( $sessionCookie ) ) {
+			$this->errorOut( 'no-centralauth-cookies' );
+			return;
+		}
+	
 		$baseUrl = 'http://commons.wikimedia.org/w/api.php';
 		$getParams = array();
 		foreach ( $_GET as $key => $val ) {
@@ -24,6 +29,8 @@ class ProxiedApiMain
 		$opts = array(
 			'http' => array(
 				'user_agent' => 'MediaWiki internal proxy',
+				'header' => "Cookie: centralauth_User=" . urlencode( $userCookie ) .
+					";centralauth_Session=" . urlencode( $sessionCookie ),
 			),
 		);
 
@@ -33,6 +40,8 @@ class ProxiedApiMain
 			$opts['http']['content'] = file_get_contents( 'php://stdin' );
 		}
 		
+		//var_dump($opts);die('xxx');
+
 		// Quick hack
 		$type = $wgRequest->getVal( 'format' );
 		if ( $type == 'json' ) {
