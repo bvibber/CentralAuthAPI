@@ -1,0 +1,6 @@
+API assistance proxy for CentralAuth-using wikis.
+
+Passes API requests with an 'apitarget' parameter through to another wiki,
+passing on CentralAuth identifying cookies as necessary.
+
+This is an alternative to using CORS which doesn't rely on origin whitelisting.
