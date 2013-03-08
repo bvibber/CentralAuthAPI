@@ -44,10 +44,19 @@ class ProxiedApiMain
 			),
 		);
 
-		$posted = ($_SERVER['METHOD'] == 'POST');
+		$posted = ($_SERVER['REQUEST_METHOD'] == 'POST');
 		if ( $posted ) {
 			$opts['http']['method'] = 'POST';
-			$opts['http']['content'] = file_get_contents( 'php://stdin' );
+			if ( count( $_FILES ) ) {
+				// multipart
+				$opts['http']['content'] = $this->copyMultipartFormData();
+				$opts['http']['header'] = array(
+					'Content-Type: multipart/form-data; boundary=' . $this->separator
+				);
+			} else {
+				// hopefully not multipart
+				$opts['http']['content'] = file_get_contents( 'php://input' );
+			}
 		}
 
 		// Quick hack
@@ -79,6 +88,30 @@ class ProxiedApiMain
 	
 	function getModule() {
 		return new ProxiedApiModule();
+	}
+
+	function copyMultipartFormData() {
+		$data = '';
+		$separator = '-----------------------------' . mt_rand();
+		$this->separator = $separator;
+		foreach ( $_POST as $key => $val ) {
+			$data .= "--$separator\r\n";
+			$data .= "Content-Disposition: form-data; name=\"$key\"\r\n";
+			$data .= "\r\n";
+			$data .= $val . "\r\n";
+		}
+		foreach ( $_FILES as $key => $file ) {
+			$name = $file['name'];
+			$type = $file['type'];
+			$data .= "--$separator\r\n";
+			$data .= "Content-Disposition: form-data; name=\"$key\"; filename=\"$name\"\r\n";
+			$data .= "Content-Type: $type\r\n";
+			$data .= "\r\n";
+			$data .= file_get_contents( $file['tmp_name'] );
+			$data .= "\r\n";
+		}
+		$data .= "--$separator--";
+		return $data;
 	}
 }
 
