@@ -55,7 +55,10 @@ class ProxiedApiMain
 				);
 			} else {
 				// hopefully not multipart
-				$opts['http']['content'] = file_get_contents( 'php://input' );
+				$opts['http']['header'] = array(
+					'Content-Type: application/x-www-form-urlencoded'
+				);
+				$opts['http']['content'] = $_POST;
 			}
 		}
 
